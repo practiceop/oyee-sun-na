@@ -328,11 +328,38 @@
     Your browser does not support the audio element.
   </audio>
 
+  <!-- Music Control Button -->
+  <button id="musicToggle" class="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#ff7fa8] text-white shadow-lg flex items-center justify-center text-2xl hover:bg-[#ff5b8f] transition-all active:scale-95">
+    🔊
+  </button>
+
   <script>
     // Background music that continues across pages
     (function() {
       const audio = document.getElementById('bgMusic');
+      const musicToggle = document.getElementById('musicToggle');
       const STORAGE_KEY = 'bgMusicState';
+      let isPlaying = false;
+
+      // Update button appearance
+      function updateButton() {
+        musicToggle.textContent = isPlaying ? '🔊' : '🔇';
+        musicToggle.style.opacity = isPlaying ? '1' : '0.6';
+      }
+
+      // Toggle music on button click
+      musicToggle.addEventListener('click', () => {
+        if (isPlaying) {
+          audio.pause();
+          isPlaying = false;
+        } else {
+          audio.play().then(() => {
+            isPlaying = true;
+            updateButton();
+          }).catch(e => console.log('Play failed:', e));
+        }
+        updateButton();
+      });
       
       // Load saved state
       const savedState = localStorage.getItem(STORAGE_KEY);
@@ -340,17 +367,22 @@
         const state = JSON.parse(savedState);
         audio.currentTime = state.currentTime || 0;
         if (state.isPlaying) {
-          audio.play().catch(e => console.log('Auto-play prevented:', e));
+          audio.play().then(() => {
+            isPlaying = true;
+            updateButton();
+          }).catch(e => {
+            console.log('Auto-play prevented:', e);
+            updateButton();
+          });
         }
       } else {
-        // First time - try to play
-        audio.play().catch(e => {
-          console.log('Auto-play prevented. User interaction needed.');
-          // Add click listener to start music on first interaction
-          document.body.addEventListener('click', function startMusic() {
-            audio.play();
-            document.body.removeEventListener('click', startMusic);
-          }, { once: true });
+        // First time - try to play automatically
+        audio.play().then(() => {
+          isPlaying = true;
+          updateButton();
+        }).catch(e => {
+          console.log('Auto-play prevented. Click the button to play music.');
+          updateButton();
         });
       }
 
@@ -371,6 +403,8 @@
           isPlaying: !audio.paused
         }));
       });
+
+      updateButton();
     })();
   </script>
 </body>
